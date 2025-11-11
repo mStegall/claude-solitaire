@@ -53,7 +53,7 @@ body {
 }
 
 .header button:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 .win-message {
@@ -118,12 +118,19 @@ body {
   position: relative;
   min-height: 140px;
   width: 100px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .stock-pile,
 .waste-pile,
 .foundation-pile {
   height: 140px;
+}
+
+.stock-pile:hover,
+.waste-pile:hover,
+.foundation-pile:hover {
+  transform: translateY(-2px);
 }
 
 .tableau-pile {
@@ -142,13 +149,39 @@ body {
   color: rgba(255, 255, 255, 0.3);
   font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .empty-pile:hover {
   border-color: rgba(255, 255, 255, 0.5);
   color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.05);
+}
+
+/* Drop zone highlighting */
+.pile.drag-over {
+  animation: pulseGlow 0.6s ease-in-out infinite alternate;
+}
+
+.pile.drag-over .empty-pile {
+  border-color: rgba(76, 175, 80, 0.8);
+  background: rgba(76, 175, 80, 0.15);
+  color: rgba(76, 175, 80, 0.8);
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
+}
+
+.pile.drag-over .card {
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
+  border-color: rgba(76, 175, 80, 0.6);
+}
+
+@keyframes pulseGlow {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.03);
+  }
 }
 
 .card {
@@ -159,13 +192,13 @@ body {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
 }
 
 .card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
   z-index: 100;
 }
 
@@ -173,8 +206,90 @@ body {
   cursor: move;
 }
 
+.card[draggable="true"]:active {
+  cursor: grabbing;
+  opacity: 0.7;
+  transform: rotate(3deg) scale(1.05);
+  z-index: 1000;
+  transition: all 0.1s ease;
+}
+
+/* Dragging state */
+.card.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+  transition: all 0.2s ease;
+}
+
+/* Dragging indicator for cards below the dragged card in tableau */
+.tableau-pile .card[draggable="true"]:hover ~ .card {
+  opacity: 0.85;
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+  transition: all 0.2s ease;
+}
+
+/* Visual feedback for cards that will move together */
+.tableau-pile .card[draggable="true"]:active ~ .card {
+  opacity: 0.6;
+  transform: translateY(-2px) scale(0.98);
+  filter: brightness(0.95);
+}
+
+/* Smooth position transitions */
+.card {
+  will-change: transform, opacity, box-shadow;
+}
+
+/* Enhanced card stacking with better shadows */
+.tableau-pile .card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.tableau-pile .card:hover {
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+}
+
+/* Foundation pile success animation */
+.foundation-pile .card {
+  animation: fadeInBounce 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes fadeInBounce {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Card drop animation */
+@keyframes cardDrop {
+  0% {
+    transform: scale(1.05) translateY(-10px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(0.98);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
 .card.face-down {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.card.face-down:hover {
+  transform: translateY(-5px) scale(1.02);
 }
 
 .card-back {
@@ -189,6 +304,29 @@ body {
   );
   border-radius: 8px;
   border: 3px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* Stock pile click animation */
+.stock-pile:active {
+  transform: scale(0.95);
+  transition: transform 0.1s ease;
+}
+
+/* Waste pile smooth entry */
+.waste-pile .card {
+  animation: slideInFromLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .card.face-up {

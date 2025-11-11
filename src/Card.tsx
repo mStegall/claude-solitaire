@@ -5,6 +5,7 @@ interface CardProps {
   card: CardType;
   onClick?: () => void;
   onDragStart?: (e: DragEvent) => void;
+  onDragEnd?: (e: DragEvent) => void;
   onDragOver?: (e: DragEvent) => void;
   onDrop?: (e: DragEvent) => void;
   draggable?: boolean;
@@ -29,6 +30,7 @@ const Card: Component<CardProps> = (props) => {
       class={`card ${props.card.faceUp ? 'face-up' : 'face-down'} ${isRed() ? 'red' : 'black'}`}
       onClick={props.onClick}
       onDragStart={props.onDragStart}
+      onDragEnd={props.onDragEnd}
       onDragOver={props.onDragOver}
       onDrop={props.onDrop}
       draggable={props.draggable && props.card.faceUp}

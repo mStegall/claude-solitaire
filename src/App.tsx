@@ -1,4 +1,4 @@
-import { Component, For, Show } from 'solid-js';
+import { Component, For, Show, createSignal } from 'solid-js';
 import { useGame } from './gameLogic';
 import Card from './Card';
 import './App.css';
@@ -7,19 +7,50 @@ const App: Component = () => {
   const { gameState, drawFromStock, moveCards, newGame, isGameWon } = useGame();
 
   let dragData: { pile: string; index: number } | null = null;
+  const [dragOverPile, setDragOverPile] = createSignal<string | null>(null);
+  const [isDragging, setIsDragging] = createSignal(false);
 
   const handleDragStart = (pile: string, index: number) => (e: DragEvent) => {
     dragData = { pile, index };
     e.dataTransfer!.effectAllowed = 'move';
+    setIsDragging(true);
+
+    // Add dragging class to the element
+    const target = e.target as HTMLElement;
+    setTimeout(() => target.classList.add('dragging'), 0);
+
+    // Set custom drag image with offset
+    if (e.dataTransfer) {
+      e.dataTransfer.setDragImage(target, 50, 70);
+    }
   };
 
-  const handleDragOver = (e: DragEvent) => {
+  const handleDragEnd = (e: DragEvent) => {
+    const target = e.target as HTMLElement;
+    target.classList.remove('dragging');
+    setIsDragging(false);
+    setDragOverPile(null);
+  };
+
+  const handleDragOver = (pileName: string) => (e: DragEvent) => {
     e.preventDefault();
     e.dataTransfer!.dropEffect = 'move';
+    setDragOverPile(pileName);
+  };
+
+  const handleDragLeave = (e: DragEvent) => {
+    // Only clear if we're leaving the pile entirely
+    const target = e.currentTarget as HTMLElement;
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (!target.contains(relatedTarget)) {
+      setDragOverPile(null);
+    }
   };
 
   const handleDrop = (destPile: string, destIndex: number) => (e: DragEvent) => {
     e.preventDefault();
+    setDragOverPile(null);
+    setIsDragging(false);
     if (dragData) {
       moveCards(dragData.pile, dragData.index, destPile, destIndex);
       dragData = null;
@@ -76,8 +107,9 @@ const App: Component = () => {
             </div>
 
             <div
-              class="pile waste-pile"
-              onDragOver={handleDragOver}
+              class={`pile waste-pile ${dragOverPile() === 'waste' ? 'drag-over' : ''}`}
+              onDragOver={handleDragOver('waste')}
+              onDragLeave={handleDragLeave}
               onDrop={handleDrop('waste', 0)}
             >
               <Show when={gameState().waste.length > 0} fallback={<div class="empty-pile"></div>}>
@@ -85,6 +117,7 @@ const App: Component = () => {
                   card={gameState().waste[gameState().waste.length - 1]}
                   draggable={true}
                   onDragStart={handleDragStart('waste', gameState().waste.length - 1)}
+                  onDragEnd={handleDragEnd}
                   onClick={() => handleCardClick('waste', gameState().waste.length - 1)}
                 />
               </Show>
@@ -94,17 +127,21 @@ const App: Component = () => {
           {/* Foundations */}
           <div class="foundations">
             <For each={gameState().foundations}>
-              {(foundation, index) => (
-                <div
-                  class="pile foundation-pile"
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop(`foundation-${index()}`, 0)}
-                >
-                  <Show when={foundation.length > 0} fallback={<div class="empty-pile">A</div>}>
-                    <Card card={foundation[foundation.length - 1]} />
-                  </Show>
-                </div>
-              )}
+              {(foundation, index) => {
+                const pileName = `foundation-${index()}`;
+                return (
+                  <div
+                    class={`pile foundation-pile ${dragOverPile() === pileName ? 'drag-over' : ''}`}
+                    onDragOver={handleDragOver(pileName)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop(pileName, 0)}
+                  >
+                    <Show when={foundation.length > 0} fallback={<div class="empty-pile">A</div>}>
+                      <Card card={foundation[foundation.length - 1]} />
+                    </Show>
+                  </div>
+                );
+              }}
             </For>
           </div>
         </div>
@@ -112,27 +149,32 @@ const App: Component = () => {
         {/* Tableau */}
         <div class="tableau">
           <For each={gameState().tableau}>
-            {(pile, pileIndex) => (
-              <div
-                class="pile tableau-pile"
-                onDragOver={handleDragOver}
-                onDrop={handleDrop(`tableau-${pileIndex()}`, 0)}
-              >
-                <Show when={pile.length > 0} fallback={<div class="empty-pile">K</div>}>
-                  <For each={pile}>
-                    {(card, cardIndex) => (
-                      <Card
-                        card={card}
-                        draggable={card.faceUp}
-                        offsetIndex={cardIndex()}
-                        onDragStart={handleDragStart(`tableau-${pileIndex()}`, cardIndex())}
-                        onClick={() => handleCardClick(`tableau-${pileIndex()}`, cardIndex())}
-                      />
-                    )}
-                  </For>
-                </Show>
-              </div>
-            )}
+            {(pile, pileIndex) => {
+              const pileName = `tableau-${pileIndex()}`;
+              return (
+                <div
+                  class={`pile tableau-pile ${dragOverPile() === pileName ? 'drag-over' : ''}`}
+                  onDragOver={handleDragOver(pileName)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop(pileName, 0)}
+                >
+                  <Show when={pile.length > 0} fallback={<div class="empty-pile">K</div>}>
+                    <For each={pile}>
+                      {(card, cardIndex) => (
+                        <Card
+                          card={card}
+                          draggable={card.faceUp}
+                          offsetIndex={cardIndex()}
+                          onDragStart={handleDragStart(pileName, cardIndex())}
+                          onDragEnd={handleDragEnd}
+                          onClick={() => handleCardClick(pileName, cardIndex())}
+                        />
+                      )}
+                    </For>
+                  </Show>
+                </div>
+              );
+            }}
           </For>
         </div>
       </div>
