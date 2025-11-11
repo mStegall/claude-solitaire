@@ -1,5 +1,6 @@
 import { Component, For, Show } from 'solid-js';
-import { useGame } from './gameLogic';
+import { useGame, DIFFICULTY_CONFIGS } from './gameLogic';
+import type { Difficulty } from './types';
 import Card from './Card';
 import './App.css';
 
@@ -47,11 +48,46 @@ const App: Component = () => {
     }
   };
 
+  const getDifficultyInfo = () => {
+    const state = gameState();
+    const config = DIFFICULTY_CONFIGS[state.difficulty];
+    let info = `Draw ${config.cardsDrawn}`;
+    if (config.passLimit !== null) {
+      const remaining = config.passLimit - state.passCount;
+      info += ` | Passes: ${remaining}/${config.passLimit}`;
+    }
+    return info;
+  };
+
   return (
     <div class="game">
       <div class="header">
         <h1>Klondike Solitaire</h1>
-        <button onClick={newGame}>New Game</button>
+        <div class="controls">
+          <div class="difficulty-selector">
+            <label>Difficulty:</label>
+            <button
+              class={gameState().difficulty === 'easy' ? 'active' : ''}
+              onClick={() => newGame('easy')}
+            >
+              Easy
+            </button>
+            <button
+              class={gameState().difficulty === 'normal' ? 'active' : ''}
+              onClick={() => newGame('normal')}
+            >
+              Normal
+            </button>
+            <button
+              class={gameState().difficulty === 'hard' ? 'active' : ''}
+              onClick={() => newGame('hard')}
+            >
+              Hard
+            </button>
+          </div>
+          <div class="game-info">{getDifficultyInfo()}</div>
+          <button class="new-game-btn" onClick={() => newGame()}>New Game</button>
+        </div>
       </div>
 
       <Show when={isGameWon()}>
@@ -81,12 +117,18 @@ const App: Component = () => {
               onDrop={handleDrop('waste', 0)}
             >
               <Show when={gameState().waste.length > 0} fallback={<div class="empty-pile"></div>}>
-                <Card
-                  card={gameState().waste[gameState().waste.length - 1]}
-                  draggable={true}
-                  onDragStart={handleDragStart('waste', gameState().waste.length - 1)}
-                  onClick={() => handleCardClick('waste', gameState().waste.length - 1)}
-                />
+                <For each={gameState().waste.slice(-3)}>
+                  {(card, index) => (
+                    <Card
+                      card={card}
+                      draggable={index() === gameState().waste.slice(-3).length - 1}
+                      offsetIndex={index()}
+                      horizontal={true}
+                      onDragStart={handleDragStart('waste', gameState().waste.length - 1)}
+                      onClick={() => handleCardClick('waste', gameState().waste.length - 1)}
+                    />
+                  )}
+                </For>
               </Show>
             </div>
           </div>

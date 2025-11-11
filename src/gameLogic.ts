@@ -1,5 +1,11 @@
 import { createSignal } from 'solid-js';
-import type { Card, Suit, Rank, GameState } from './types';
+import type { Card, Suit, Rank, GameState, Difficulty, DifficultyConfig } from './types';
+
+export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
+  easy: { cardsDrawn: 3, passLimit: null },
+  normal: { cardsDrawn: 1, passLimit: null },
+  hard: { cardsDrawn: 1, passLimit: 3 },
+};
 
 const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
 const ranks: Rank[] = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
@@ -28,7 +34,7 @@ function shuffle<T>(array: T[]): T[] {
   return shuffled;
 }
 
-export function initializeGame(): GameState {
+export function initializeGame(difficulty: Difficulty = 'normal'): GameState {
   const deck = createDeck();
   const tableau: Card[][] = [[], [], [], [], [], [], []];
 
@@ -50,6 +56,8 @@ export function initializeGame(): GameState {
     foundations: [[], [], [], []],
     tableau,
     selectedCard: null,
+    difficulty,
+    passCount: 0,
   };
 }
 
@@ -101,22 +109,31 @@ export function useGame() {
 
   const drawFromStock = () => {
     setGameState((state) => {
+      const config = DIFFICULTY_CONFIGS[state.difficulty];
+
       if (state.stock.length === 0) {
+        // Check if pass limit has been reached
+        if (config.passLimit !== null && state.passCount >= config.passLimit) {
+          return state; // Can't recycle anymore
+        }
+
         // Reset stock from waste
         return {
           ...state,
           stock: [...state.waste].reverse().map(c => ({ ...c, faceUp: false })),
           waste: [],
+          passCount: state.passCount + 1,
         };
       }
 
-      const card = state.stock[0];
-      card.faceUp = true;
+      // Draw cards based on difficulty (1 or 3)
+      const cardsToDraw = Math.min(config.cardsDrawn, state.stock.length);
+      const drawnCards = state.stock.slice(0, cardsToDraw).map(c => ({ ...c, faceUp: true }));
 
       return {
         ...state,
-        stock: state.stock.slice(1),
-        waste: [...state.waste, card],
+        stock: state.stock.slice(cardsToDraw),
+        waste: [...state.waste, ...drawnCards],
       };
     });
   };
@@ -192,8 +209,8 @@ export function useGame() {
     });
   };
 
-  const newGame = () => {
-    setGameState(initializeGame());
+  const newGame = (difficulty?: Difficulty) => {
+    setGameState(initializeGame(difficulty || gameState().difficulty));
   };
 
   const isGameWon = () => {

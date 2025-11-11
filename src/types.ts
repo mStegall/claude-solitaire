@@ -8,10 +8,19 @@ export interface Card {
   id: string;
 }
 
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
+export interface DifficultyConfig {
+  cardsDrawn: 1 | 3;
+  passLimit: number | null; // null means unlimited
+}
+
 export interface GameState {
   stock: Card[];
   waste: Card[];
   foundations: Card[][];
   tableau: Card[][];
   selectedCard: { card: Card; pile: string; index: number } | null;
+  difficulty: Difficulty;
+  passCount: number; // Number of times deck has been recycled
 }

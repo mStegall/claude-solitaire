@@ -9,6 +9,7 @@ interface CardProps {
   onDrop?: (e: DragEvent) => void;
   draggable?: boolean;
   offsetIndex?: number;
+  horizontal?: boolean;
 }
 
 const Card: Component<CardProps> = (props) => {
@@ -33,7 +34,8 @@ const Card: Component<CardProps> = (props) => {
       onDrop={props.onDrop}
       draggable={props.draggable && props.card.faceUp}
       style={{
-        top: props.offsetIndex !== undefined ? `${props.offsetIndex * 25}px` : '0',
+        top: props.offsetIndex !== undefined && !props.horizontal ? `${props.offsetIndex * 25}px` : '0',
+        left: props.offsetIndex !== undefined && props.horizontal ? `${props.offsetIndex * 30}px` : '0',
       }}
     >
       {props.card.faceUp ? (
