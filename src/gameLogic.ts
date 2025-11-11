@@ -2,9 +2,9 @@ import { createSignal } from 'solid-js';
 import type { Card, Suit, Rank, GameState, Difficulty, DifficultyConfig } from './types';
 
 export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
-  easy: { cardsDrawn: 3, passLimit: null },
-  normal: { cardsDrawn: 1, passLimit: null },
-  hard: { cardsDrawn: 1, passLimit: 3 },
+  easy: { cardsDrawn: 1, passLimit: null },
+  normal: { cardsDrawn: 3, passLimit: null },
+  hard: { cardsDrawn: 3, passLimit: 3 },
 };
 
 const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
@@ -34,7 +34,7 @@ function shuffle<T>(array: T[]): T[] {
   return shuffled;
 }
 
-export function initializeGame(difficulty: Difficulty = 'normal'): GameState {
+export function initializeGame(difficulty: Difficulty = 'easy'): GameState {
   const deck = createDeck();
   const tableau: Card[][] = [[], [], [], [], [], [], []];
 
