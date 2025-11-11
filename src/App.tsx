@@ -4,7 +4,7 @@ import Card from './Card';
 import './App.css';
 
 const App: Component = () => {
-  const { gameState, drawFromStock, moveCards, newGame, isGameWon } = useGame();
+  const { gameState, drawFromStock, moveCards, newGame, setDrawCount, isGameWon } = useGame();
 
   let dragData: { pile: string; index: number } | null = null;
 
@@ -51,7 +51,23 @@ const App: Component = () => {
     <div class="game">
       <div class="header">
         <h1>Klondike Solitaire</h1>
-        <button onClick={newGame}>New Game</button>
+        <div class="controls">
+          <div class="draw-mode">
+            <button
+              class={gameState().drawCount === 1 ? 'active' : ''}
+              onClick={() => { setDrawCount(1); newGame(1); }}
+            >
+              Draw 1
+            </button>
+            <button
+              class={gameState().drawCount === 3 ? 'active' : ''}
+              onClick={() => { setDrawCount(3); newGame(3); }}
+            >
+              Draw 3
+            </button>
+          </div>
+          <button onClick={() => newGame()}>New Game</button>
+        </div>
       </div>
 
       <Show when={isGameWon()}>
@@ -81,12 +97,33 @@ const App: Component = () => {
               onDrop={handleDrop('waste', 0)}
             >
               <Show when={gameState().waste.length > 0} fallback={<div class="empty-pile"></div>}>
-                <Card
-                  card={gameState().waste[gameState().waste.length - 1]}
-                  draggable={true}
-                  onDragStart={handleDragStart('waste', gameState().waste.length - 1)}
-                  onClick={() => handleCardClick('waste', gameState().waste.length - 1)}
-                />
+                <Show when={gameState().drawCount === 3}>
+                  <div class="waste-cards">
+                    <For each={gameState().waste.slice(-3)}>
+                      {(card, index) => {
+                        const isTopCard = index() === Math.min(2, gameState().waste.length - 1);
+                        return (
+                          <div class="waste-card" style={{ left: `${index() * 20}px` }}>
+                            <Card
+                              card={card}
+                              draggable={isTopCard}
+                              onDragStart={isTopCard ? handleDragStart('waste', gameState().waste.length - 1) : undefined}
+                              onClick={isTopCard ? () => handleCardClick('waste', gameState().waste.length - 1) : undefined}
+                            />
+                          </div>
+                        );
+                      }}
+                    </For>
+                  </div>
+                </Show>
+                <Show when={gameState().drawCount === 1}>
+                  <Card
+                    card={gameState().waste[gameState().waste.length - 1]}
+                    draggable={true}
+                    onDragStart={handleDragStart('waste', gameState().waste.length - 1)}
+                    onClick={() => handleCardClick('waste', gameState().waste.length - 1)}
+                  />
+                </Show>
               </Show>
             </div>
           </div>

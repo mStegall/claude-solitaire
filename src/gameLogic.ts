@@ -28,7 +28,7 @@ function shuffle<T>(array: T[]): T[] {
   return shuffled;
 }
 
-export function initializeGame(): GameState {
+export function initializeGame(drawCount: 1 | 3 = 1): GameState {
   const deck = createDeck();
   const tableau: Card[][] = [[], [], [], [], [], [], []];
 
@@ -50,6 +50,7 @@ export function initializeGame(): GameState {
     foundations: [[], [], [], []],
     tableau,
     selectedCard: null,
+    drawCount,
   };
 }
 
@@ -110,13 +111,14 @@ export function useGame() {
         };
       }
 
-      const card = state.stock[0];
-      card.faceUp = true;
+      // Draw cards based on drawCount setting
+      const cardsToDraw = Math.min(state.drawCount, state.stock.length);
+      const drawnCards = state.stock.slice(0, cardsToDraw).map(c => ({ ...c, faceUp: true }));
 
       return {
         ...state,
-        stock: state.stock.slice(1),
-        waste: [...state.waste, card],
+        stock: state.stock.slice(cardsToDraw),
+        waste: [...state.waste, ...drawnCards],
       };
     });
   };
@@ -192,8 +194,16 @@ export function useGame() {
     });
   };
 
-  const newGame = () => {
-    setGameState(initializeGame());
+  const newGame = (drawCount?: 1 | 3) => {
+    const currentDrawCount = drawCount ?? gameState().drawCount;
+    setGameState(initializeGame(currentDrawCount));
+  };
+
+  const setDrawCount = (drawCount: 1 | 3) => {
+    setGameState((state) => ({
+      ...state,
+      drawCount,
+    }));
   };
 
   const isGameWon = () => {
@@ -207,6 +217,7 @@ export function useGame() {
     selectCard,
     moveCards,
     newGame,
+    setDrawCount,
     isGameWon,
   };
 }

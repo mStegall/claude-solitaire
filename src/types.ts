@@ -14,4 +14,5 @@ export interface GameState {
   foundations: Card[][];
   tableau: Card[][];
   selectedCard: { card: Card; pile: string; index: number } | null;
+  drawCount: 1 | 3;
 }
