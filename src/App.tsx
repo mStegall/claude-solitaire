@@ -160,16 +160,19 @@ const App: Component = () => {
                 >
                   <Show when={pile.length > 0} fallback={<div class="empty-pile">K</div>}>
                     <For each={pile}>
-                      {(card, cardIndex) => (
-                        <Card
-                          card={card}
-                          draggable={card.faceUp}
-                          offsetIndex={cardIndex()}
-                          onDragStart={handleDragStart(pileName, cardIndex())}
-                          onDragEnd={handleDragEnd}
-                          onClick={() => handleCardClick(pileName, cardIndex())}
-                        />
-                      )}
+                      {(card, cardIndex) => {
+                        const isTopCard = cardIndex() === pile.length - 1;
+                        return (
+                          <Card
+                            card={card}
+                            draggable={card.faceUp && isTopCard}
+                            offsetIndex={cardIndex()}
+                            onDragStart={isTopCard ? handleDragStart(pileName, cardIndex()) : undefined}
+                            onDragEnd={isTopCard ? handleDragEnd : undefined}
+                            onClick={isTopCard ? () => handleCardClick(pileName, cardIndex()) : undefined}
+                          />
+                        );
+                      }}
                     </For>
                   </Show>
                 </div>
