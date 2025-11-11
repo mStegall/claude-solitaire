@@ -34,21 +34,106 @@ function shuffle<T>(array: T[]): T[] {
   return shuffled;
 }
 
-export function initializeGame(difficulty: Difficulty = 'easy'): GameState {
-  const deck = createDeck();
-  const tableau: Card[][] = [[], [], [], [], [], [], []];
+// Score a tableau setup to determine how "winnable" it is
+function scoreTableauSetup(tableau: Card[][]): number {
+  let score = 0;
 
-  // Deal cards to tableau
-  let deckIndex = 0;
-  for (let i = 0; i < 7; i++) {
-    for (let j = i; j < 7; j++) {
-      const card = deck[deckIndex++];
-      if (i === j) {
-        card.faceUp = true;
+  for (let i = 0; i < tableau.length; i++) {
+    const pile = tableau[i];
+
+    for (let j = 0; j < pile.length; j++) {
+      const card = pile[j];
+
+      if (!card.faceUp) continue;
+
+      // Aces face up are very valuable
+      if (card.rank === 'A') {
+        score += 20;
       }
-      tableau[j].push(card);
+      // Low cards (2, 3, 4) face up are valuable
+      else if (card.rank === '2' || card.rank === '3' || card.rank === '4') {
+        score += 10;
+      }
+      // Kings face up are moderately valuable (can move to empty spaces)
+      else if (card.rank === 'K') {
+        score += 5;
+      }
+
+      // Check if this card can be placed on another pile
+      if (j === pile.length - 1) {  // Only check the bottom (playable) card
+        for (let k = 0; k < tableau.length; k++) {
+          if (k === i) continue;
+          const targetPile = tableau[k];
+          const targetCard = targetPile[targetPile.length - 1];
+          if (targetCard && canPlaceOnTableau(card, targetCard)) {
+            score += 8;
+            break;
+          }
+        }
+      }
+
+      // Bonus for consecutive sequences (alternating colors, descending ranks)
+      if (j < pile.length - 1) {
+        const nextCard = pile[j + 1];
+        if (nextCard.faceUp && canPlaceOnTableau(nextCard, card)) {
+          score += 4;
+        }
+      }
+    }
+
+    // Penalty for long piles with many face-down cards
+    const faceDownCount = pile.filter(c => !c.faceUp).length;
+    if (faceDownCount > 3) {
+      score -= (faceDownCount - 3) * 2;
     }
   }
+
+  return score;
+}
+
+export function initializeGame(difficulty: Difficulty = 'easy'): GameState {
+  // Define score thresholds for each difficulty
+  const scoreThresholds = {
+    easy: { min: 40, max: Infinity },   // Want high scores (lucky shuffles)
+    normal: { min: 20, max: 50 },      // Accept moderate scores
+    hard: { min: -Infinity, max: 30 }, // Want low scores (difficult shuffles)
+  };
+
+  const threshold = scoreThresholds[difficulty];
+  let tableau: Card[][] = [];
+  let deck: Card[] = [];
+  let score = 0;
+  let attempts = 0;
+  const maxAttempts = 100; // Prevent infinite loops
+
+  // Keep generating shuffles until we get one matching the difficulty
+  do {
+    deck = createDeck();
+    tableau = [[], [], [], [], [], [], []];
+
+    // Deal cards to tableau
+    let deckIndex = 0;
+    for (let i = 0; i < 7; i++) {
+      for (let j = i; j < 7; j++) {
+        const card = deck[deckIndex++];
+        card.faceUp = (i === j);
+        tableau[j].push(card);
+      }
+    }
+
+    score = scoreTableauSetup(tableau);
+    attempts++;
+
+    // For easy mode, keep trying to get a good shuffle
+    // For normal/hard, accept after a few attempts if we can't hit the exact range
+    if (attempts >= maxAttempts && difficulty !== 'easy') break;
+  } while (score < threshold.min || score > threshold.max);
+
+  // Log shuffle quality for debugging
+  console.log(`[${difficulty.toUpperCase()}] Generated shuffle with score ${score} after ${attempts} attempts`);
+
+  // Calculate the starting deckIndex after dealing to tableau
+  const deckIndex = 28; // 1+2+3+4+5+6+7 = 28 cards dealt to tableau
 
   return {
     stock: deck.slice(deckIndex),
